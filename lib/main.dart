@@ -75,7 +75,7 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(8.0),
             child: TextButton.icon(
               onPressed: () {
-                // Add clear functionality here
+                _prescriptionController.clearAll();
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.red.shade700,

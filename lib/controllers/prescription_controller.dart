@@ -152,6 +152,35 @@ class PrescriptionController {
     }
   }
 
+  void clearAll() {
+    // Clear text controllers
+    patientNameController.clear();
+    ageController.clear();
+    genderController.clear();
+    phoneController.clear();
+    dateController.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    addressController.clear();
+    ccController.clear();
+    oeController.clear();
+    advController.clear();
+
+    // Dispose all dynamic boxes from all pages
+    for (final page in pages) {
+      for (final box in page.dynamicBoxes) {
+        box.medicineController.dispose();
+        box.dosageController.dispose();
+        box.durationController.dispose();
+        box.foodInstructionController.dispose();
+      }
+    }
+
+    // Reset pages
+    pages.clear();
+    _createNewPage(); // This will create a new page with initial boxes
+
+    onUpdate?.call();
+  }
+
   void _reflowDynamicBoxes({bool addBox = false}) {
     // Consolidate all existing dynamic boxes into a single list
     final allDynamicBoxes = pages.expand((page) => page.dynamicBoxes).toList();

@@ -185,7 +185,10 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
   }
 
   Widget _buildMedicationCard(MedicationBox box) {
+    // Using ObjectKey ensures that Flutter creates a new widget with fresh state
+    // when the MedicationBox instance changes, preventing issues with stale controllers.
     return Card(
+      key: ObjectKey(box),
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -220,10 +223,17 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
                       return ListTile(title: Text(suggestion.name));
                     },
                     onSelected: (suggestion) {
-                      box.medicineController.text = suggestion.name;
+                      // Safety check: ensure the box and its controller haven't been disposed
+                      if (widget.controller.getAllDynamicBoxes().any(
+                        (b) => b.id == box.id,
+                      )) {
+                        box.medicineController.text = suggestion.name;
+                      }
                     },
                     controller: box.medicineController,
                     builder: (context, controller, focusNode) {
+                      // The 'controller' here is the one managed by TypeAheadField,
+                      // which is safer to use than the one from the 'box' closure.
                       return TextField(
                         controller: controller,
                         focusNode: focusNode,
@@ -243,6 +253,7 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
                     controller: box.durationController,
                     decoration: const InputDecoration(
                       labelText: 'Days',
+                      // hintText: 'days',
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
