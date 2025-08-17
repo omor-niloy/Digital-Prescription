@@ -6,6 +6,11 @@ class MedicationBox {
   final TextEditingController medicineController;
   final TextEditingController dosageController;
   final TextEditingController durationController;
+  final TextEditingController foodInstructionController;
+  bool isMorning;
+  bool isNoon;
+  bool isNight;
+  String foodInstruction; // "none", "খাবার আগে", "খাবার পরে"
 
   MedicationBox({
     required this.id,
@@ -13,5 +18,10 @@ class MedicationBox {
     required this.medicineController,
     required this.dosageController,
     required this.durationController,
+    required this.foodInstructionController,
+    this.isMorning = false,
+    this.isNoon = false,
+    this.isNight = false,
+    this.foodInstruction = "none",
   });
 }

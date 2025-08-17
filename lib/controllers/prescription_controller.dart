@@ -15,13 +15,16 @@ class PrescriptionController {
   late final TextEditingController phoneController;
   late final TextEditingController dateController;
   late final TextEditingController addressController;
+  late final TextEditingController ccController;
+  late final TextEditingController oeController;
+  late final TextEditingController advController;
 
   // Define the layout for the static boxes
   final Map<String, Rect> _staticBoxLayout = {
-    'patient_name': const Rect.fromLTWH(85, 247, 155, 27),
-    'age': const Rect.fromLTWH(300, 247, 80, 27),
-    'address': const Rect.fromLTWH(450, 247, 200, 27), // Address field
-    'date': const Rect.fromLTWH(650, 247, 130, 27),
+    'patient_name': const Rect.fromLTWH(85, 244, 155, 30),
+    'age': const Rect.fromLTWH(300, 244, 80, 30),
+    'address': const Rect.fromLTWH(450, 244, 195, 30), // Address field
+    'date': const Rect.fromLTWH(650, 244, 130, 30),
     'C/C': const Rect.fromLTWH(50, 340, 195, 180),
     'O/E': const Rect.fromLTWH(50, 560, 195, 120),
     'Adv': const Rect.fromLTWH(50, 720, 195, 200),
@@ -33,6 +36,7 @@ class PrescriptionController {
   final double _dynamicBoxHeight = 80;
   final double _dynamicBoxSpacing = 15;
   final int _maxDynamicBoxesPerPage = 7;
+  final int _initialBoxes = 1;
 
   PrescriptionController() {
     // Initialize the central controllers
@@ -44,6 +48,9 @@ class PrescriptionController {
       text: DateFormat('dd/MM/yyyy').format(DateTime.now()),
     );
     addressController = TextEditingController();
+    ccController = TextEditingController();
+    oeController = TextEditingController();
+    advController = TextEditingController();
 
     _createNewPage();
   }
@@ -70,6 +77,15 @@ class PrescriptionController {
         case 'date':
           controller = dateController;
           break;
+        case 'C/C':
+          controller = ccController;
+          break;
+        case 'O/E':
+          controller = oeController;
+          break;
+        case 'Adv':
+          controller = advController;
+          break;
         // Other static boxes get their own controllers
         default:
           controller = TextEditingController();
@@ -86,7 +102,7 @@ class PrescriptionController {
     // Create 7 default dynamic boxes only for the first page
     final defaultDynamicBoxes = <MedicationBox>[];
     if (pageNumber == 1) {
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < _initialBoxes; i++) {
         final newY =
             _dynamicBoxStartY + i * (_dynamicBoxHeight + _dynamicBoxSpacing);
         defaultDynamicBoxes.add(
@@ -95,7 +111,12 @@ class PrescriptionController {
             medicineController: TextEditingController(),
             dosageController: TextEditingController(),
             durationController: TextEditingController(),
+            foodInstructionController: TextEditingController(),
             position: Rect.fromLTWH(330, newY, 400, _dynamicBoxHeight),
+            isMorning: false,
+            isNoon: false,
+            isNight: false,
+            foodInstruction: "none",
           ),
         );
       }
@@ -115,22 +136,19 @@ class PrescriptionController {
     _reflowDynamicBoxes(addBox: true);
   }
 
-  void deleteDynamicBox(int pageIndex, String boxId) {
-    if (pageIndex < 0 || pageIndex >= pages.length) return;
-
-    final page = pages[pageIndex];
-    final boxIndex = page.dynamicBoxes.indexWhere((box) => box.id == boxId);
-
-    if (boxIndex != -1) {
-      // Dispose all controllers and remove the box
-      final box = page.dynamicBoxes[boxIndex];
-      box.medicineController.dispose();
-      box.dosageController.dispose();
-      box.durationController.dispose();
-      page.dynamicBoxes.removeAt(boxIndex);
-
-      // Reflow all other boxes
-      _reflowDynamicBoxes();
+  void deleteDynamicBox(String boxId) {
+    for (final page in pages) {
+      final boxIndex = page.dynamicBoxes.indexWhere((b) => b.id == boxId);
+      if (boxIndex != -1) {
+        final box = page.dynamicBoxes[boxIndex];
+        box.medicineController.dispose();
+        box.dosageController.dispose();
+        box.durationController.dispose();
+        box.foodInstructionController.dispose();
+        page.dynamicBoxes.removeAt(boxIndex);
+        _reflowDynamicBoxes();
+        return; // Found and deleted, so exit.
+      }
     }
   }
 
@@ -150,7 +168,12 @@ class PrescriptionController {
         medicineController: TextEditingController(),
         dosageController: TextEditingController(),
         durationController: TextEditingController(),
+        foodInstructionController: TextEditingController(),
         position: Rect.zero, // Temporary position
+        isMorning: false,
+        isNoon: false,
+        isNight: false,
+        foodInstruction: "none",
       );
       allDynamicBoxes.add(newBox);
     }
@@ -183,7 +206,12 @@ class PrescriptionController {
           medicineController: box.medicineController,
           dosageController: box.dosageController,
           durationController: box.durationController,
+          foodInstructionController: box.foodInstructionController,
           position: Rect.fromLTWH(330, newY, 400, _dynamicBoxHeight),
+          isMorning: box.isMorning,
+          isNoon: box.isNoon,
+          isNight: box.isNight,
+          foodInstruction: box.foodInstruction,
         ),
       );
     }
@@ -197,7 +225,10 @@ class PrescriptionController {
             box.controller == patientNameController ||
             box.controller == ageController ||
             box.controller == addressController ||
-            box.controller == dateController;
+            box.controller == dateController ||
+            box.controller == ccController ||
+            box.controller == oeController ||
+            box.controller == advController;
 
         if (!isSharedController) {
           box.controller.dispose();
@@ -209,6 +240,53 @@ class PrescriptionController {
     onUpdate?.call();
   }
 
+  void updateDosage(
+    int pageIndex,
+    String boxId,
+    bool morning,
+    bool noon,
+    bool night,
+  ) {
+    if (pageIndex < 0 || pageIndex >= pages.length) return;
+
+    final page = pages[pageIndex];
+    final boxIndex = page.dynamicBoxes.indexWhere((box) => box.id == boxId);
+
+    if (boxIndex != -1) {
+      final box = page.dynamicBoxes[boxIndex];
+      box.isMorning = morning;
+      box.isNoon = noon;
+      box.isNight = night;
+
+      // Update the dosage text field with the 1+0+1 format
+      final morningValue = morning ? '1' : '0';
+      final noonValue = noon ? '1' : '0';
+      final nightValue = night ? '1' : '0';
+      box.dosageController.text = '$morningValue+$noonValue+$nightValue';
+
+      onUpdate?.call();
+    }
+  }
+
+  void updateFoodInstruction(String boxId, String instruction) {
+    for (final page in pages) {
+      final boxIndex = page.dynamicBoxes.indexWhere((box) => box.id == boxId);
+      if (boxIndex != -1) {
+        final box = page.dynamicBoxes[boxIndex];
+        box.foodInstruction = instruction;
+        box.foodInstructionController.text = instruction == "none"
+            ? ""
+            : instruction;
+        onUpdate?.call();
+        return;
+      }
+    }
+  }
+
+  List<MedicationBox> getAllDynamicBoxes() {
+    return pages.expand((page) => page.dynamicBoxes).toList();
+  }
+
   void dispose() {
     // Dispose the central controllers
     patientNameController.dispose();
@@ -217,6 +295,9 @@ class PrescriptionController {
     phoneController.dispose();
     dateController.dispose();
     addressController.dispose();
+    ccController.dispose();
+    oeController.dispose();
+    advController.dispose();
 
     for (var page in pages) {
       // Dispose only the controllers that are not central
@@ -224,7 +305,10 @@ class PrescriptionController {
         if (box.controller != patientNameController &&
             box.controller != ageController &&
             box.controller != addressController &&
-            box.controller != dateController) {
+            box.controller != dateController &&
+            box.controller != ccController &&
+            box.controller != oeController &&
+            box.controller != advController) {
           box.controller.dispose();
         }
       }
@@ -232,6 +316,7 @@ class PrescriptionController {
         box.medicineController.dispose();
         box.dosageController.dispose();
         box.durationController.dispose();
+        box.foodInstructionController.dispose();
       }
     }
   }

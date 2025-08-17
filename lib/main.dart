@@ -112,43 +112,55 @@ class _HomePageState extends State<HomePage> {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Patient Info Panel
-                SizedBox(
-                  width: 350,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Card(
-                      child: PatientInfoPanel(
-                        controller: _prescriptionController,
+                // Patient Info Panel (takes 30% of available width)
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 350,
+                      maxWidth: 500,
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Card(
+                        child: PatientInfoPanel(
+                          controller: _prescriptionController,
+                        ),
                       ),
                     ),
                   ),
                 ),
                 const VerticalDivider(width: 1),
-                // Prescription Pages
+                // Prescription Pages (takes 70% of available width)
                 Expanded(
-                  child: Scrollbar(
-                    controller: _scrollController,
-                    thumbVisibility: true,
-                    child: SingleChildScrollView(
+                  flex: 7,
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Scrollbar(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 20,
-                        horizontal: 40,
-                      ),
-                      child: Column(
-                        children: [
-                          for (
-                            int i = 0;
-                            i < _prescriptionController.pages.length;
-                            i++
-                          )
-                            PrescriptionPage(
-                              pageIndex: i,
-                              pageModel: _prescriptionController.pages[i],
-                              controller: _prescriptionController,
-                            ),
-                        ],
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 40,
+                        ),
+                        child: Column(
+                          children: [
+                            for (
+                              int i = 0;
+                              i < _prescriptionController.pages.length;
+                              i++
+                            )
+                              PrescriptionPage(
+                                pageIndex: i,
+                                pageModel: _prescriptionController.pages[i],
+                                controller: _prescriptionController,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -157,33 +169,38 @@ class _HomePageState extends State<HomePage> {
             );
           } else {
             // NARROW LAYOUT: Panel on top of pages
-            return Scrollbar(
-              controller: _scrollController,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
+            return InteractiveViewer(
+              panEnabled: true,
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Scrollbar(
                 controller: _scrollController,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Card(
-                        child: PatientInfoPanel(
-                          controller: _prescriptionController,
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Card(
+                          child: PatientInfoPanel(
+                            controller: _prescriptionController,
+                          ),
                         ),
                       ),
-                    ),
-                    const Divider(),
-                    for (
-                      int i = 0;
-                      i < _prescriptionController.pages.length;
-                      i++
-                    )
-                      PrescriptionPage(
-                        pageIndex: i,
-                        pageModel: _prescriptionController.pages[i],
-                        controller: _prescriptionController,
-                      ),
-                  ],
+                      const Divider(),
+                      for (
+                        int i = 0;
+                        i < _prescriptionController.pages.length;
+                        i++
+                      )
+                        PrescriptionPage(
+                          pageIndex: i,
+                          pageModel: _prescriptionController.pages[i],
+                          controller: _prescriptionController,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );

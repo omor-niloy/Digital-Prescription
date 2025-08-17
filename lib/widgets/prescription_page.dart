@@ -1,13 +1,10 @@
-import 'package:digital_prescription/database/database_helper.dart';
-import 'package:digital_prescription/models/medicine.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_typeahead/flutter_typeahead.dart';
 import '../controllers/prescription_controller.dart';
 import '../models/text_box.dart';
 import '../models/medication_box.dart';
 import '../models/prescription_page_model.dart';
 
-class PrescriptionPage extends StatelessWidget {
+class PrescriptionPage extends StatefulWidget {
   final int pageIndex;
   final PrescriptionPageModel pageModel;
   final PrescriptionController controller;
@@ -19,20 +16,40 @@ class PrescriptionPage extends StatelessWidget {
     required this.controller,
   }) : super(key: key);
 
+  @override
+  _PrescriptionPageState createState() => _PrescriptionPageState();
+}
+
+class _PrescriptionPageState extends State<PrescriptionPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Remove the setOnUpdate call here to avoid overriding the HomePage's callback
+  }
+
   Widget _buildTextBox(TextBox box, double scale) {
-    final isSingleLineStatic = ['patient_name', 'age', 'date'].contains(box.id);
+    final isSingleLineStatic = [
+      'patient_name',
+      'age',
+      'date',
+      'address',
+    ].contains(box.id);
 
     // Scale font size and other properties to maintain visual consistency
-    final double baseFontSize = 14.0;
+    final double baseFontSize = 16.0;
     final scaledFontSize = baseFontSize * scale;
 
     final staticTextField = TextField(
       controller: box.controller,
+      readOnly: true, // Make the text field read-only
       maxLines: isSingleLineStatic ? 1 : 10,
-      textAlignVertical: TextAlignVertical.center,
+      // textAlignVertical: TextAlignVertical.center,
       style: TextStyle(fontSize: scaledFontSize),
       decoration: InputDecoration(
         border: InputBorder.none,
+        // border: OutlineInputBorder(
+        //   borderSide: BorderSide(color: Colors.grey.shade300),
+        // ),
         isDense: true,
         contentPadding: EdgeInsets.all(8 * scale), // Scale padding
       ),
@@ -48,7 +65,7 @@ class PrescriptionPage extends StatelessWidget {
   }
 
   Widget _buildMedicationBox(MedicationBox box, double scale) {
-    final double baseFontSize = 14.0;
+    final double baseFontSize = 16.0;
     final scaledFontSize = baseFontSize * scale;
 
     return Positioned(
@@ -58,12 +75,11 @@ class PrescriptionPage extends StatelessWidget {
       height: box.position.height * 1.1 * scale, // Increased height
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
           borderRadius: BorderRadius.circular(8),
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withOpacity(0.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
+              color: Colors.grey.withOpacity(0.0),
               spreadRadius: 1,
               blurRadius: 3,
               offset: Offset(0, 2),
@@ -78,46 +94,25 @@ class PrescriptionPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Medicine name field with autocomplete
+                  // Medicine name field (read-only)
                   Expanded(
                     flex: 3,
-                    child: TypeAheadField<Medicine>(
-                      suggestionsCallback: (pattern) async {
-                        return await DatabaseHelper().searchMedicines(pattern);
-                      },
-                      itemBuilder: (context, suggestion) {
-                        return ListTile(
-                          title: Text(
-                            suggestion.name,
-                            style: TextStyle(fontSize: scaledFontSize),
-                          ),
-                        );
-                      },
-                      onSelected: (suggestion) {
-                        box.medicineController.text = suggestion.name;
-                      },
+                    child: TextField(
                       controller: box.medicineController,
-                      builder: (context, controller, focusNode) {
-                        return TextField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          style: TextStyle(
-                            fontSize: scaledFontSize,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Medicine name...',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 10 * scale,
-                              vertical: 8 * scale,
-                            ),
-                            isDense: true,
-                          ),
-                        );
-                      },
+                      readOnly: true,
+                      style: TextStyle(
+                        fontSize: 20 * scale,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      decoration: InputDecoration(
+                        // hintText: 'Medicine name...',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 10 * scale,
+                          vertical: 8 * scale,
+                        ),
+                        isDense: true,
+                      ),
                     ),
                   ),
                   SizedBox(height: 10 * scale),
@@ -131,16 +126,34 @@ class PrescriptionPage extends StatelessWidget {
                         ), // Move dosage box to the right
                         // Dosage field
                         SizedBox(
-                          width: 100 * scale,
+                          width: 120 * scale, // Increased width for dosage
                           child: TextField(
                             controller: box.dosageController,
+                            readOnly: true,
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: scaledFontSize),
                             decoration: InputDecoration(
-                              hintText: '1+0+1',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
+                              // hintText: '0+0+0',
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 8 * scale,
+                                horizontal: 4 * scale,
                               ),
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10), // Add spacing
+                        // Food instruction field
+                        SizedBox(
+                          width: 100 * scale,
+                          child: TextField(
+                            controller: box.foodInstructionController,
+                            readOnly: true,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: scaledFontSize),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(
                                 vertical: 8 * scale,
                                 horizontal: 4 * scale,
@@ -155,13 +168,12 @@ class PrescriptionPage extends StatelessWidget {
                           width: 100 * scale,
                           child: TextField(
                             controller: box.durationController,
+                            readOnly: true,
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: scaledFontSize),
                             decoration: InputDecoration(
-                              hintText: '7 days',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
+                              // hintText: 'days',
+                              border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(
                                 vertical: 8 * scale,
                                 horizontal: 4 * scale,
@@ -177,27 +189,40 @@ class PrescriptionPage extends StatelessWidget {
               ),
             ),
             // Delete button
-            Positioned(
-              right: -10,
-              top: -10,
-              child: Material(
-                color: Colors.transparent,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.remove_circle,
-                    color: Colors.redAccent,
-                    size: 24 * scale,
-                  ),
-                  onPressed: () =>
-                      controller.deleteDynamicBox(pageIndex, box.id),
-                  splashRadius: 20 * scale,
-                  tooltip: 'Delete',
-                ),
-              ),
-            ),
+            // Positioned(
+            //   right: -10,
+            //   top: -10,
+            //   child: Material(
+            //     color: Colors.transparent,
+            //     child: IconButton(
+            //       icon: Icon(
+            //         Icons.remove_circle,
+            //         color: Colors.redAccent,
+            //         size: 24 * scale,
+            //       ),
+            //       onPressed: () => widget.controller.deleteDynamicBox(box.id),
+            //       splashRadius: 20 * scale,
+            //       tooltip: 'Delete',
+            //     ),
+            //   ),
+            // ),
           ],
         ),
       ),
+    );
+  }
+
+  void _updateDosageDisplay(MedicationBox box) {
+    final morningValue = box.isMorning ? '1' : '0';
+    final noonValue = box.isNoon ? '1' : '0';
+    final nightValue = box.isNight ? '1' : '0';
+    box.dosageController.text = '$morningValue+$noonValue+$nightValue';
+    widget.controller.updateDosage(
+      widget.pageIndex,
+      box.id,
+      box.isMorning,
+      box.isNoon,
+      box.isNight,
     );
   }
 
@@ -240,23 +265,12 @@ class PrescriptionPage extends StatelessWidget {
       child: Stack(
         children: [
           // Static boxes from the current page
-          ...pageModel.staticBoxes.map((box) => _buildTextBox(box, scale)),
-          // Dynamic boxes (medication boxes) from the current page
-          ...pageModel.dynamicBoxes.map(
-            (box) => _buildMedicationBox(box, scale),
+          ...widget.pageModel.staticBoxes.map(
+            (box) => _buildTextBox(box, scale),
           ),
-          // Add medication button
-          Positioned(
-            bottom: 20,
-            right: 20,
-            child: FloatingActionButton(
-              onPressed: () {
-                controller.addDynamicBox();
-              },
-              child: Icon(Icons.add),
-              tooltip: 'Add Medication',
-              mini: true,
-            ),
+          // Dynamic boxes (medication boxes) from the current page
+          ...widget.pageModel.dynamicBoxes.map(
+            (box) => _buildMedicationBox(box, scale),
           ),
         ],
       ),
