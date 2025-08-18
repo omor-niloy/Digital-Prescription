@@ -140,8 +140,9 @@ class _HomePageState extends State<HomePage> {
                   flex: 7,
                   child: InteractiveViewer(
                     panEnabled: true,
-                    minScale: 0.5,
-                    maxScale: 4.0,
+                    scaleEnabled: false, // Disables zooming
+                    minScale: 1.0, // Set scale to 1.0 to prevent any scaling
+                    maxScale: 1.0,
                     child: Scrollbar(
                       controller: _scrollController,
                       thumbVisibility: true,
@@ -175,8 +176,9 @@ class _HomePageState extends State<HomePage> {
             // NARROW LAYOUT: Panel on top of pages
             return InteractiveViewer(
               panEnabled: true,
-              minScale: 0.5,
-              maxScale: 4.0,
+              scaleEnabled: false, // Disables zooming
+              minScale: 1.0, // Set scale to 1.0 to prevent any scaling
+              maxScale: 1.0,
               child: Scrollbar(
                 controller: _scrollController,
                 thumbVisibility: true,
