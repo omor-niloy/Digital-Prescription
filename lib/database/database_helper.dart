@@ -113,7 +113,7 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query(
       'medicines',
       where: 'name LIKE ?',
-      whereArgs: ['$query%'],
+      whereArgs: ['%$query%'],
       limit: 5,
     );
     return List.generate(maps.length, (i) {
