@@ -8,8 +8,93 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
 
 class PdfService {
+  static const String _savedDirectoryKey = 'saved_pdf_directory';
+
+  // Get saved directory from shared preferences
+  Future<String?> _getSavedDirectory() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_savedDirectoryKey);
+  }
+
+  // Save directory to shared preferences
+  Future<void> _saveDirectory(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_savedDirectoryKey, path);
+  }
+
+  // Let user select directory once
+  Future<String?> _selectDirectory() async {
+    try {
+      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      if (selectedDirectory != null) {
+        await _saveDirectory(selectedDirectory);
+        return selectedDirectory;
+      }
+    } catch (e) {
+      print('Error selecting directory: $e');
+    }
+    return null;
+  }
+
+  // Get the directory to use for saving PDFs
+  Future<Directory?> _getDirectoryForSaving() async {
+    if (Platform.isAndroid) {
+      // First check if we have a saved directory
+      String? savedPath = await _getSavedDirectory();
+
+      if (savedPath != null) {
+        Directory savedDir = Directory(savedPath);
+        if (await savedDir.exists()) {
+          return savedDir;
+        }
+      }
+
+      // If no saved directory or it doesn't exist, let user select
+      String? selectedPath = await _selectDirectory();
+      if (selectedPath != null) {
+        return Directory(selectedPath);
+      }
+
+      // Fallback to default external storage
+      try {
+        Directory? fallbackDir = await getExternalStorageDirectory();
+        fallbackDir ??= await getApplicationDocumentsDirectory();
+        return fallbackDir;
+      } catch (e) {
+        print("Error getting fallback directory: $e");
+        return await getApplicationDocumentsDirectory();
+      }
+    } else {
+      // For other platforms, use default behavior
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        return await getDownloadsDirectory();
+      } else {
+        return await getApplicationDocumentsDirectory();
+      }
+    }
+  }
+
+  // Public method to let user change the save directory
+  Future<bool> changeSaveDirectory() async {
+    if (Platform.isAndroid) {
+      String? newPath = await _selectDirectory();
+      return newPath != null;
+    }
+    return false; // Not supported on other platforms
+  }
+
+  // Get current save directory path for display
+  Future<String?> getCurrentSaveDirectory() async {
+    if (Platform.isAndroid) {
+      return await _getSavedDirectory();
+    }
+    return null;
+  }
+
   bool _containsBengali(String s) {
     if (s.isEmpty) return false;
     return RegExp(r'[\u0980-\u09FF]').hasMatch(s);
@@ -259,22 +344,7 @@ class PdfService {
     // 3. Get the directory to save the file
     Directory? directory;
     try {
-      if (Platform.isAndroid) {
-        // Try external storage first, fall back to app documents
-        try {
-          directory = await getExternalStorageDirectory();
-          if (directory == null) {
-            directory = await getApplicationDocumentsDirectory();
-          }
-        } catch (e) {
-          print("External storage not available, using app documents: $e");
-          directory = await getApplicationDocumentsDirectory();
-        }
-      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-        directory = await getDownloadsDirectory();
-      } else {
-        directory = await getApplicationDocumentsDirectory();
-      }
+      directory = await _getDirectoryForSaving();
     } catch (e) {
       print("Could not get the directory: $e");
       return;
