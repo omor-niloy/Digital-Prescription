@@ -129,14 +129,14 @@ class PdfService {
         if (_containsBengali(food)) {
           final targetWidthPt = 100 * scaleX;
           final widthPx = (targetWidthPt * 3).clamp(60, 4000).toDouble();
-          final fontSizePt = 16 * 0.75;
+          final fontSizePt = 18 * 0.75;
           final fontSizePx = (fontSizePt * 3);
           final bytes = await _renderTextToPng(
             text: food,
             maxWidthPx: widthPx,
             fontSizePx: fontSizePx,
             align: TextAlign.center,
-            maxLines: 2,
+            maxLines: 1,
           );
           foodImages[medBox.id] = pw.MemoryImage(bytes);
         }
