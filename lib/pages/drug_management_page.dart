@@ -23,7 +23,7 @@ class _DrugManagementPageState extends State<DrugManagementPage> {
   }
 
   Future<void> _loadMedicines() async {
-    final medicines = await DatabaseHelper().getAllMedicines();
+    final medicines = await DatabaseHelper().getMedicines(limit: 20);
     if (mounted) {
       setState(() {
         _medicines = medicines;
@@ -34,8 +34,22 @@ class _DrugManagementPageState extends State<DrugManagementPage> {
 
   void _filterMedicines() {
     final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) {
+      // Show only first 20 medicines when no search query
+      setState(() {
+        _filteredMedicines = _medicines;
+      });
+    } else {
+      // Show all matching medicines when searching
+      _loadAllMedicinesForSearch();
+    }
+  }
+
+  Future<void> _loadAllMedicinesForSearch() async {
+    final allMedicines = await DatabaseHelper().getAllMedicines();
+    final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredMedicines = _medicines
+      _filteredMedicines = allMedicines
           .where((medicine) => medicine.name.toLowerCase().contains(query))
           .toList();
     });
@@ -154,10 +168,17 @@ class _DrugManagementPageState extends State<DrugManagementPage> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.add, color: Colors.teal, size: 30),
+                ElevatedButton(
                   onPressed: _showAddDrugDialog,
-                  tooltip: 'Add New Drug',
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Add Medicine'),
                 ),
               ],
             ),
