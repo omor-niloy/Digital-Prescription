@@ -1,3 +1,4 @@
+import 'package:digital_prescription/services/pdf_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -46,6 +47,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final PrescriptionController _prescriptionController;
   final ScrollController _scrollController = ScrollController();
+  final PdfService _pdfService = PdfService();
 
   @override
   void initState() {
@@ -89,7 +91,9 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.all(8.0),
             child: TextButton.icon(
               onPressed: () {
-                // Add print functionality here
+                _pdfService.generateAndPrintPrescription(
+                  _prescriptionController,
+                );
               },
               style: TextButton.styleFrom(
                 backgroundColor: Colors.green.shade700,
