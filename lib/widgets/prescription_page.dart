@@ -154,6 +154,11 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
                             style: TextStyle(fontSize: scaledFontSize),
                             decoration: InputDecoration(
                               border: InputBorder.none,
+                              // border: OutlineInputBorder(
+                              //   borderSide: BorderSide(
+                              //     color: Colors.grey.shade300,
+                              //   ),
+                              // ),
                               contentPadding: EdgeInsets.symmetric(
                                 vertical: 8 * scale,
                                 horizontal: 4 * scale,

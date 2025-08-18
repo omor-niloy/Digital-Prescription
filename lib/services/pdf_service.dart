@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/painting.dart' as painting;
 import 'package:digital_prescription/controllers/prescription_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -8,6 +10,57 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:printing/printing.dart';
 
 class PdfService {
+  bool _containsBengali(String s) {
+    if (s.isEmpty) return false;
+    return RegExp(r'[\u0980-\u09FF]').hasMatch(s);
+  }
+
+  Future<Uint8List> _renderTextToPng({
+    required String text,
+    required double maxWidthPx,
+    required double fontSizePx,
+    bool bold = false,
+    TextAlign align = TextAlign.left,
+    int maxLines = 3,
+  }) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+
+    final tp = painting.TextPainter(
+      textDirection: TextDirection.ltr,
+      textAlign: align,
+      maxLines: maxLines,
+      ellipsis: null,
+      text: painting.TextSpan(
+        text: text,
+        style: painting.TextStyle(
+          fontFamily: 'NotoSansBengali',
+          fontSize: fontSizePx,
+          fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+          color: const Color(0xFF000000),
+        ),
+      ),
+    );
+    tp.layout(maxWidth: maxWidthPx);
+
+    final textSize = tp.size;
+    // Add a tiny padding to avoid clipping
+    final imgW = textSize.width.ceil() + 4;
+    final imgH = textSize.height.ceil() + 4;
+
+    final bgPaint = painting.Paint()..color = const Color(0x00000000);
+    canvas.drawRect(
+      ui.Rect.fromLTWH(0, 0, imgW.toDouble(), imgH.toDouble()),
+      bgPaint,
+    );
+    tp.paint(canvas, const Offset(2, 2));
+
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(imgW, imgH);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
   Future<void> generateAndPrintPrescription(
     PrescriptionController controller,
   ) async {
@@ -21,7 +74,7 @@ class PdfService {
       }
     }
 
-    // 2. Create the PDF document with a custom theme
+    // 2. Create the PDF document with a custom Bengali font (Noto Sans Bengali)
     final regularFontData = await rootBundle.load(
       'assets/fonts/HindSiliguri-Regular.ttf',
     );
@@ -54,6 +107,25 @@ class PdfService {
 
     // Generate a page for each page in the controller
     for (var pageModel in controller.pages) {
+      // Pre-render only the FOOD text if it contains Bengali
+      final Map<String, pw.MemoryImage> foodImages = {};
+      for (final medBox in pageModel.dynamicBoxes) {
+        final food = medBox.foodInstructionController.text;
+        if (_containsBengali(food)) {
+          final targetWidthPt = 100 * scaleX;
+          final widthPx = (targetWidthPt * 3).clamp(60, 4000).toDouble();
+          final fontSizePt = 16 * 0.75;
+          final fontSizePx = (fontSizePt * 3);
+          final bytes = await _renderTextToPng(
+            text: food,
+            maxWidthPx: widthPx,
+            fontSizePx: fontSizePx,
+            align: TextAlign.center,
+            maxLines: 2,
+          );
+          foodImages[medBox.id] = pw.MemoryImage(bytes);
+        }
+      }
       pdf.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
@@ -66,7 +138,6 @@ class PdfService {
 
                 // Static text boxes (patient info, clinical notes)
                 ...pageModel.staticBoxes.map((box) {
-                  // Match the base font size from the UI
                   double fontSize = 16.0;
                   return pw.Positioned(
                     left: box.position.left * scaleX,
@@ -78,8 +149,9 @@ class PdfService {
                       child: pw.Text(
                         box.controller.text,
                         style: pw.TextStyle(
+                          font: ttfRegular,
                           fontSize: fontSize * 0.75,
-                        ), // Adjust for PDF scaling
+                        ),
                       ),
                     ),
                   );
@@ -102,8 +174,8 @@ class PdfService {
                             child: pw.Text(
                               medBox.medicineController.text,
                               style: pw.TextStyle(
-                                font: ttfBold, // Explicitly use the bold font
-                                fontSize: 18 * 0.75, // Match UI: 20
+                                font: ttfBold,
+                                fontSize: 18 * 0.75,
                               ),
                             ),
                           ),
@@ -118,7 +190,8 @@ class PdfService {
                                   child: pw.Text(
                                     medBox.dosageController.text,
                                     textAlign: pw.TextAlign.center,
-                                    style: const pw.TextStyle(
+                                    style: pw.TextStyle(
+                                      font: ttfRegular,
                                       fontSize: 16 * 0.75,
                                     ), // Match UI: 16
                                   ),
@@ -126,13 +199,20 @@ class PdfService {
                                 pw.SizedBox(width: 10),
                                 pw.Container(
                                   width: 100 * scaleX,
-                                  child: pw.Text(
-                                    medBox.foodInstructionController.text,
-                                    textAlign: pw.TextAlign.center,
-                                    style: const pw.TextStyle(
-                                      fontSize: 16 * 0.75,
-                                    ), // Match UI: 16
-                                  ),
+                                  alignment: pw.Alignment.center,
+                                  child: foodImages.containsKey(medBox.id)
+                                      ? pw.Image(
+                                          foodImages[medBox.id]!,
+                                          fit: pw.BoxFit.contain,
+                                        )
+                                      : pw.Text(
+                                          medBox.foodInstructionController.text,
+                                          textAlign: pw.TextAlign.center,
+                                          style: pw.TextStyle(
+                                            font: ttfRegular,
+                                            fontSize: 16 * 0.75,
+                                          ),
+                                        ),
                                 ),
                                 pw.Spacer(),
                                 pw.Container(
@@ -140,7 +220,8 @@ class PdfService {
                                   child: pw.Text(
                                     medBox.durationController.text,
                                     textAlign: pw.TextAlign.center,
-                                    style: const pw.TextStyle(
+                                    style: pw.TextStyle(
+                                      font: ttfRegular,
                                       fontSize: 16 * 0.75,
                                     ), // Match UI: 16
                                   ),
@@ -184,12 +265,17 @@ class PdfService {
     }
 
     // Create a unique filename
-    final patientName = controller.patientNameController.text.replaceAll(
+    final patientName = controller.patientNameController.text.trim().replaceAll(
       ' ',
       '_',
     );
+    final numberRaw = controller.phoneController.text.trim();
+    final number = numberRaw.isEmpty
+        ? 'NA'
+        : numberRaw.replaceAll(RegExp(r'\s+'), '');
     final date = DateTime.now().toIso8601String().split('T').first;
-    final filePath = '${prescriptionsDir.path}/${patientName}_${date}.pdf';
+    final filePath =
+        '${prescriptionsDir.path}/${number}_${patientName}_${date}.pdf';
     final file = File(filePath);
 
     // 4. Save the PDF to the file
