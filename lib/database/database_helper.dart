@@ -30,6 +30,39 @@ class DatabaseHelper {
     await _seedDatabase(db);
   }
 
+  Future<List<Medicine>> getMedicines({int limit = 20}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'medicines',
+      limit: limit,
+    );
+    return List.generate(maps.length, (i) {
+      return Medicine.fromMap(maps[i]);
+    });
+  }
+
+  Future<List<Medicine>> getAllMedicines() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('medicines');
+    return List.generate(maps.length, (i) {
+      return Medicine.fromMap(maps[i]);
+    });
+  }
+
+  Future<void> deleteMedicine(int id) async {
+    final db = await database;
+    await db.delete('medicines', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> insertMedicine(Medicine medicine) async {
+    final db = await database;
+    await db.insert(
+      'medicines',
+      medicine.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   Future<void> _seedDatabase(Database db) async {
     List<String> initialMedicines = [
       'Napa',
