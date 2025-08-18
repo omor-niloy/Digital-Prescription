@@ -199,7 +199,7 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Medication #${box.id.split('_').last}', // Simple numbering
+                  'Medication #${int.parse(box.id.split('_').last) + 1}', // Simple numbering
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 IconButton(
