@@ -1,4 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Storage permissions for PDF saving -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    
+    <!-- For Android 11+ (API 30+) scoped storage -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    
+    <!-- Internet permission for potential printing services -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="digital_prescription"
         android:name="${applicationName}"

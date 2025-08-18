@@ -65,10 +65,25 @@ class PdfService {
     PrescriptionController controller,
   ) async {
     // 1. Request necessary permissions
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (Platform.isAndroid) {
+      // Request multiple permissions for Android
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.storage,
+        Permission.manageExternalStorage,
+      ].request();
+
+      // Check if at least one storage permission is granted
+      bool hasStoragePermission =
+          statuses[Permission.storage]?.isGranted == true ||
+          statuses[Permission.manageExternalStorage]?.isGranted == true;
+
+      if (!hasStoragePermission) {
+        print('Storage permission denied. Cannot save PDF.');
+        return;
+      }
+    } else if (Platform.isIOS) {
       var status = await Permission.storage.request();
       if (status.isDenied) {
-        // Handle the case where the user denies permission
         print('Storage permission denied.');
         return;
       }
@@ -244,7 +259,18 @@ class PdfService {
     // 3. Get the directory to save the file
     Directory? directory;
     try {
-      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      if (Platform.isAndroid) {
+        // Try external storage first, fall back to app documents
+        try {
+          directory = await getExternalStorageDirectory();
+          if (directory == null) {
+            directory = await getApplicationDocumentsDirectory();
+          }
+        } catch (e) {
+          print("External storage not available, using app documents: $e");
+          directory = await getApplicationDocumentsDirectory();
+        }
+      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
         directory = await getDownloadsDirectory();
       } else {
         directory = await getApplicationDocumentsDirectory();
@@ -261,7 +287,13 @@ class PdfService {
 
     final prescriptionsDir = Directory('${directory.path}/Prescriptions');
     if (!await prescriptionsDir.exists()) {
-      await prescriptionsDir.create(recursive: true);
+      try {
+        await prescriptionsDir.create(recursive: true);
+        print('Created prescriptions directory: ${prescriptionsDir.path}');
+      } catch (e) {
+        print('Failed to create prescriptions directory: $e');
+        return;
+      }
     }
 
     // Create a unique filename
@@ -279,8 +311,13 @@ class PdfService {
     final file = File(filePath);
 
     // 4. Save the PDF to the file
-    await file.writeAsBytes(await pdf.save());
-    print('PDF saved to $filePath');
+    try {
+      await file.writeAsBytes(await pdf.save());
+      print('PDF saved successfully to: $filePath');
+    } catch (e) {
+      print('Failed to save PDF: $e');
+      return;
+    }
 
     // 5. Send the PDF to the printer
     try {
