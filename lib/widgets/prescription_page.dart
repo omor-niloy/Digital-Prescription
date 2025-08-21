@@ -217,19 +217,19 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
     );
   }
 
-  void _updateDosageDisplay(MedicationBox box) {
-    final morningValue = box.isMorning ? '1' : '0';
-    final noonValue = box.isNoon ? '1' : '0';
-    final nightValue = box.isNight ? '1' : '0';
-    box.dosageController.text = '$morningValue+$noonValue+$nightValue';
-    widget.controller.updateDosage(
-      widget.pageIndex,
-      box.id,
-      box.isMorning,
-      box.isNoon,
-      box.isNight,
-    );
-  }
+  // void _updateDosageDisplay(MedicationBox box) {
+  //   final morningValue = box.isMorning ? '1' : '0';
+  //   final noonValue = box.isNoon ? '1' : '0';
+  //   final nightValue = box.isNight ? '1' : '0';
+  //   box.dosageController.text = '$morningValue+$noonValue+$nightValue';
+  //   widget.controller.updateDosage(
+  //     widget.pageIndex,
+  //     box.id,
+  //     box.isMorning,
+  //     box.isNoon,
+  //     box.isNight,
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -255,7 +255,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         image: const DecorationImage(
-          image: AssetImage('assets/images/bg.jpg'),
+          image: AssetImage('assets/images/bg_v2.jpg'),
           fit: BoxFit.cover,
         ),
         border: Border.all(color: Colors.grey.shade300),

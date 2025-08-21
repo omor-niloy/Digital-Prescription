@@ -190,7 +190,7 @@ class PdfService {
     );
 
     // Load the background image from assets
-    final imageBytes = await rootBundle.load('assets/images/bg.jpg');
+    final imageBytes = await rootBundle.load('assets/images/bg_v2.jpg');
     final image = pw.MemoryImage(imageBytes.buffer.asUint8List());
 
     // A4 page dimensions
