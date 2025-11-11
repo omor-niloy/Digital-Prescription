@@ -147,11 +147,17 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
               final currentLine = lines.isNotEmpty ? lines.last : '';
 
               if (currentLine.trim().isEmpty) {
-                return [];
+                // Show top 5 items when field is empty
+                return (await DatabaseHelper().getChiefComplaints(
+                  limit: 5,
+                )).map((e) => e.name).toList();
               }
-              return (await DatabaseHelper().searchChiefComplaints(
+
+              // Search based on current line
+              final results = await DatabaseHelper().searchChiefComplaints(
                 currentLine.trim(),
-              )).map((e) => e.name).toList();
+              );
+              return results.map((e) => e.name).toList();
             },
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
@@ -216,11 +222,17 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
               final currentLine = lines.isNotEmpty ? lines.last : '';
 
               if (currentLine.trim().isEmpty) {
-                return [];
+                // Show top 5 items when field is empty
+                return (await DatabaseHelper().getOnExaminations(
+                  limit: 5,
+                )).map((e) => e.name).toList();
               }
-              return (await DatabaseHelper().searchOnExaminations(
+
+              // Search based on current line
+              final results = await DatabaseHelper().searchOnExaminations(
                 currentLine.trim(),
-              )).map((e) => e.name).toList();
+              );
+              return results.map((e) => e.name).toList();
             },
             itemBuilder: (context, suggestion) {
               return ListTile(title: Text(suggestion));
