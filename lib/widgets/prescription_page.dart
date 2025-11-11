@@ -255,7 +255,7 @@ class _PrescriptionPageState extends State<PrescriptionPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         image: const DecorationImage(
-          image: AssetImage('assets/images/bg_v3.png'),
+          image: AssetImage('assets/images/bg.png'),
           fit: BoxFit.cover,
         ),
         border: Border.all(color: Colors.grey.shade300),

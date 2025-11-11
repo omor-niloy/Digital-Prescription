@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:digital_prescription/pages/cc_management_page.dart';
+import 'package:digital_prescription/pages/oe_management_page.dart';
 import 'package:flutter/material.dart';
 import '../pages/drug_management_page.dart';
 import '../services/pdf_service.dart';
@@ -116,6 +118,32 @@ class _HomeDrawerState extends State<HomeDrawer> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const DrugManagementPage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.notes),
+            title: const Text('C/C Management'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CcManagementPage(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.playlist_add_check),
+            title: const Text('O/E Management'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const OeManagementPage(),
                 ),
               );
             },

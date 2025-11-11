@@ -26,8 +26,8 @@ class PrescriptionController {
     'address': const Rect.fromLTWH(450, 244, 195, 30), // Address field
     'date': const Rect.fromLTWH(650, 244, 130, 30),
     'C/C': const Rect.fromLTWH(50, 340, 195, 180),
-    'O/E': const Rect.fromLTWH(50, 560, 195, 120),
-    'Adv': const Rect.fromLTWH(50, 720, 195, 200),
+    'O/E': const Rect.fromLTWH(50, 560, 195, 180),
+    'Adv': const Rect.fromLTWH(50, 780, 195, 180),
     // Add other static boxes here
   };
 

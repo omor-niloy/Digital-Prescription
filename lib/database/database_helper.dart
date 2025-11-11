@@ -1,3 +1,5 @@
+import 'package:digital_prescription/models/chief_complaint.dart';
+import 'package:digital_prescription/models/on_examination.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
@@ -27,7 +29,7 @@ class DatabaseHelper {
       return await databaseFactoryFfi.openDatabase(
         path,
         options: OpenDatabaseOptions(
-          version: 2,
+          version: 3,
           onCreate: _onCreate,
           onUpgrade: _onUpgrade,
         ),
@@ -37,7 +39,7 @@ class DatabaseHelper {
       path = join(await getDatabasesPath(), 'medicines.db');
       return await openDatabase(
         path,
-        version: 2,
+        version: 3,
         onCreate: _onCreate,
         onUpgrade: _onUpgrade,
       );
@@ -51,6 +53,18 @@ class DatabaseHelper {
         name TEXT NOT NULL
       )
     ''');
+    await db.execute('''
+      CREATE TABLE chief_complaints(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE on_examinations(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+      )
+    ''');
     await _seedDatabase(db);
   }
 
@@ -59,6 +73,21 @@ class DatabaseHelper {
       // Clear existing medicines and reseed with updated list
       await db.delete('medicines');
       await _seedDatabase(db);
+    }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE chief_complaints(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE on_examinations(
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL
+        )
+      ''');
+      await _seedNewTables(db);
     }
   }
 
@@ -96,6 +125,11 @@ class DatabaseHelper {
   }
 
   Future<void> _seedDatabase(Database db) async {
+    await _seedMedicines(db);
+    await _seedNewTables(db);
+  }
+
+  Future<void> _seedMedicines(Database db) async {
     try {
       // Load medicines from the text file
       final String medicineData = await rootBundle.loadString(
@@ -123,6 +157,22 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> _seedNewTables(Database db) async {
+    List<String> initialCCs = ['Fever', 'Cough', 'Headache', 'Abdominal Pain', 'Vomiting'];
+    Batch ccBatch = db.batch();
+    for (String name in initialCCs) {
+      ccBatch.insert('chief_complaints', {'name': name});
+    }
+    await ccBatch.commit(noResult: true);
+
+    List<String> initialOEs = ['NAD (No Abnormality Detected)', 'Tenderness in abdomen', 'Chest clear', 'BP: 120/80 mmHg', 'Temp: 98.6 F'];
+    Batch oeBatch = db.batch();
+    for (String name in initialOEs) {
+      oeBatch.insert('on_examinations', {'name': name});
+    }
+    await oeBatch.commit(noResult: true);
+  }
+
   Future<List<Medicine>> searchMedicines(String query) async {
     final db = await database;
     if (query.isEmpty) {
@@ -136,6 +186,106 @@ class DatabaseHelper {
     );
     return List.generate(maps.length, (i) {
       return Medicine.fromMap(maps[i]);
+    });
+  }
+
+  // Chief Complaint Methods
+  Future<List<ChiefComplaint>> getChiefComplaints({int limit = 20}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'chief_complaints',
+      limit: limit,
+    );
+    return List.generate(maps.length, (i) {
+      return ChiefComplaint.fromMap(maps[i]);
+    });
+  }
+
+  Future<List<ChiefComplaint>> getAllChiefComplaints() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('chief_complaints');
+    return List.generate(maps.length, (i) {
+      return ChiefComplaint.fromMap(maps[i]);
+    });
+  }
+
+  Future<void> deleteChiefComplaint(int id) async {
+    final db = await database;
+    await db.delete('chief_complaints', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> insertChiefComplaint(ChiefComplaint cc) async {
+    final db = await database;
+    await db.insert(
+      'chief_complaints',
+      cc.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<ChiefComplaint>> searchChiefComplaints(String query) async {
+    final db = await database;
+    if (query.isEmpty) {
+      return [];
+    }
+    final List<Map<String, dynamic>> maps = await db.query(
+      'chief_complaints',
+      where: 'name LIKE ?',
+      whereArgs: ['%$query%'],
+      limit: 5,
+    );
+    return List.generate(maps.length, (i) {
+      return ChiefComplaint.fromMap(maps[i]);
+    });
+  }
+
+  // On Examination Methods
+  Future<List<OnExamination>> getOnExaminations({int limit = 20}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'on_examinations',
+      limit: limit,
+    );
+    return List.generate(maps.length, (i) {
+      return OnExamination.fromMap(maps[i]);
+    });
+  }
+
+  Future<List<OnExamination>> getAllOnExaminations() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('on_examinations');
+    return List.generate(maps.length, (i) {
+      return OnExamination.fromMap(maps[i]);
+    });
+  }
+
+  Future<void> deleteOnExamination(int id) async {
+    final db = await database;
+    await db.delete('on_examinations', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> insertOnExamination(OnExamination oe) async {
+    final db = await database;
+    await db.insert(
+      'on_examinations',
+      oe.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<OnExamination>> searchOnExaminations(String query) async {
+    final db = await database;
+    if (query.isEmpty) {
+      return [];
+    }
+    final List<Map<String, dynamic>> maps = await db.query(
+      'on_examinations',
+      where: 'name LIKE ?',
+      whereArgs: ['%$query%'],
+      limit: 5,
+    );
+    return List.generate(maps.length, (i) {
+      return OnExamination.fromMap(maps[i]);
     });
   }
 }

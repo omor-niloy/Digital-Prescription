@@ -17,14 +17,24 @@ class PatientInfoPanel extends StatefulWidget {
 
 class _PatientInfoPanelState extends State<PatientInfoPanel> {
   String? selectedGender;
+  late FocusNode _ccFocusNode;
+  late FocusNode _oeFocusNode;
 
   @override
   void initState() {
     super.initState();
-    // Initialize selected gender from controller if it has a value
     if (widget.controller.genderController.text.isNotEmpty) {
       selectedGender = widget.controller.genderController.text;
     }
+    _ccFocusNode = FocusNode();
+    _oeFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _ccFocusNode.dispose();
+    _oeFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -124,22 +134,142 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 12),
-          TextField(
+          TypeAheadField<String>(
             controller: widget.controller.ccController,
-            decoration: const InputDecoration(
-              labelText: 'C/C (Chief Complaints)',
-              border: OutlineInputBorder(),
-            ),
-            // maxLines: 3,
+            suggestionsCallback: (pattern) async {
+              // Get the current line being typed
+              final controller = widget.controller.ccController;
+              final text = controller.text;
+              final cursorPos = controller.selection.start;
+
+              // Find the current line
+              final lines = text.substring(0, cursorPos).split('\n');
+              final currentLine = lines.isNotEmpty ? lines.last : '';
+
+              if (currentLine.trim().isEmpty) {
+                return [];
+              }
+              return (await DatabaseHelper().searchChiefComplaints(
+                currentLine.trim(),
+              )).map((e) => e.name).toList();
+            },
+            itemBuilder: (context, suggestion) {
+              return ListTile(title: Text(suggestion));
+            },
+            onSelected: (suggestion) {
+              final controller = widget.controller.ccController;
+              final text = controller.text;
+              final cursorPos = controller.selection.start;
+
+              // Find line start (go back to find last \n or start of text)
+              int lineStart = 0;
+              for (int i = cursorPos - 1; i >= 0; i--) {
+                if (text[i] == '\n') {
+                  lineStart = i + 1;
+                  break;
+                }
+              }
+
+              // Find line end (go forward to find next \n or end of text)
+              int lineEnd = text.length;
+              for (int i = cursorPos; i < text.length; i++) {
+                if (text[i] == '\n') {
+                  lineEnd = i;
+                  break;
+                }
+              }
+
+              // Replace current line with suggestion
+              final beforeLine = text.substring(0, lineStart);
+              final afterLine = text.substring(lineEnd);
+              final newText = beforeLine + suggestion + '\n' + afterLine;
+
+              controller.text = newText;
+              controller.selection = TextSelection.fromPosition(
+                TextPosition(offset: beforeLine.length + suggestion.length + 1),
+              );
+            },
+            builder: (context, controller, focusNode) {
+              _ccFocusNode = focusNode;
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: 'C/C (Chief Complaints)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              );
+            },
           ),
           const SizedBox(height: 12),
-          TextField(
+          TypeAheadField<String>(
             controller: widget.controller.oeController,
-            decoration: const InputDecoration(
-              labelText: 'O/E (On Examination)',
-              border: OutlineInputBorder(),
-            ),
-            // maxLines: 3,
+            suggestionsCallback: (pattern) async {
+              // Get the current line being typed
+              final controller = widget.controller.oeController;
+              final text = controller.text;
+              final cursorPos = controller.selection.start;
+
+              // Find the current line
+              final lines = text.substring(0, cursorPos).split('\n');
+              final currentLine = lines.isNotEmpty ? lines.last : '';
+
+              if (currentLine.trim().isEmpty) {
+                return [];
+              }
+              return (await DatabaseHelper().searchOnExaminations(
+                currentLine.trim(),
+              )).map((e) => e.name).toList();
+            },
+            itemBuilder: (context, suggestion) {
+              return ListTile(title: Text(suggestion));
+            },
+            onSelected: (suggestion) {
+              final controller = widget.controller.oeController;
+              final text = controller.text;
+              final cursorPos = controller.selection.start;
+
+              // Find line start (go back to find last \n or start of text)
+              int lineStart = 0;
+              for (int i = cursorPos - 1; i >= 0; i--) {
+                if (text[i] == '\n') {
+                  lineStart = i + 1;
+                  break;
+                }
+              }
+
+              // Find line end (go forward to find next \n or end of text)
+              int lineEnd = text.length;
+              for (int i = cursorPos; i < text.length; i++) {
+                if (text[i] == '\n') {
+                  lineEnd = i;
+                  break;
+                }
+              }
+
+              // Replace current line with suggestion
+              final beforeLine = text.substring(0, lineStart);
+              final afterLine = text.substring(lineEnd);
+              final newText = beforeLine + suggestion + '\n' + afterLine;
+
+              controller.text = newText;
+              controller.selection = TextSelection.fromPosition(
+                TextPosition(offset: beforeLine.length + suggestion.length + 1),
+              );
+            },
+            builder: (context, controller, focusNode) {
+              _oeFocusNode = focusNode;
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  labelText: 'O/E (On Examination)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              );
+            },
           ),
           const SizedBox(height: 12),
           TextField(
@@ -148,7 +278,7 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
               labelText: 'Adv (Advice)',
               border: OutlineInputBorder(),
             ),
-            // maxLines: 3,
+            maxLines: 3,
           ),
           const SizedBox(height: 20),
           const Divider(),
