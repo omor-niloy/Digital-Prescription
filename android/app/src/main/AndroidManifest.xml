@@ -8,11 +8,15 @@
     
     <!-- Internet permission for potential printing services -->
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- Microphone permission for offline AI dictation -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:label="digital_prescription"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:largeHeap="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

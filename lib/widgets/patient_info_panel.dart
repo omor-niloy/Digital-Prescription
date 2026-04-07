@@ -296,6 +296,27 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
           const Divider(),
           const SizedBox(height: 16),
           Text('Medications', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.mic, color: Colors.blue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Voice Format: "Medicine Name 1 0 1 for 5 days after meal"\nTap the microphone icon next to a medication box to dictate.',
+                    style: TextStyle(color: Colors.blue[800], fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           // Use a ListView.builder for a dynamic list of medication forms
           ListView.builder(
@@ -344,10 +365,33 @@ class _PatientInfoPanelState extends State<PatientInfoPanel> {
                   'Medication #${int.parse(box.id.split('_').last) + 1}', // Simple numbering
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () => widget.controller.deleteDynamicBox(box.id),
-                  tooltip: 'Delete Medication',
+                Row(
+                  children: [
+                    if (widget.controller.isProcessingVoiceMap[box.id] == true)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: SizedBox(
+                          width: 16, 
+                          height: 16, 
+                          child: CircularProgressIndicator(strokeWidth: 2)
+                        ),
+                      ),
+                    IconButton(
+                      icon: Icon(
+                        widget.controller.isRecordingMap[box.id] == true 
+                            ? Icons.mic 
+                            : Icons.mic_none,
+                        color: widget.controller.isRecordingMap[box.id] == true ? Colors.red : Colors.grey,
+                      ),
+                      onPressed: () => widget.controller.toggleVoiceRecording(box.id, context),
+                      tooltip: 'Voice Record',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () => widget.controller.deleteDynamicBox(box.id),
+                      tooltip: 'Delete Medication',
+                    ),
+                  ],
                 ),
               ],
             ),

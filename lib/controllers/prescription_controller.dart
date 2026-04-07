@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:digital_prescription/services/voice_service.dart';
+import 'package:digital_prescription/services/voice_parser_service.dart';
+import 'package:digital_prescription/database/database_helper.dart';
+import 'package:fuzzywuzzy/fuzzywuzzy.dart';
 import '../models/prescription_page_model.dart';
 import '../models/text_box.dart';
 import '../models/medication_box.dart';
@@ -7,6 +11,10 @@ import '../models/medication_box.dart';
 class PrescriptionController {
   List<PrescriptionPageModel> pages = [];
   VoidCallback? onUpdate;
+
+  final VoiceService _voiceService = VoiceService();
+  Map<String, bool> isRecordingMap = {};
+  Map<String, bool> isProcessingVoiceMap = {};
 
   // Centralized controllers for the patient info panel
   late final TextEditingController patientNameController;
@@ -314,6 +322,104 @@ class PrescriptionController {
 
   List<MedicationBox> getAllDynamicBoxes() {
     return pages.expand((page) => page.dynamicBoxes).toList();
+  }
+
+  void toggleVoiceRecording(String boxId, BuildContext context) async {
+    if (_voiceService.isListening) {
+      await _voiceService.stopListening();
+      isRecordingMap[boxId] = false;
+      onUpdate?.call();
+      return;
+    }
+
+    isRecordingMap[boxId] = true;
+    onUpdate?.call();
+
+    await _voiceService.startListening(
+      onResult: (text) async {
+        isRecordingMap[boxId] = false;
+        isProcessingVoiceMap[boxId] = true;
+        onUpdate?.call();
+        await _processVoiceCommand(boxId, text, context);
+      },
+      onDone: () {
+        if (isRecordingMap[boxId] == true) {
+          isRecordingMap[boxId] = false;
+          onUpdate?.call();
+        }
+      },
+    );
+  }
+
+  Future<void> _processVoiceCommand(String boxId, String rawText, BuildContext context) async {
+    if (rawText.isEmpty) {
+        isProcessingVoiceMap[boxId] = false;
+        onUpdate?.call();
+        return;
+    }
+
+    final parsedResult = await VoiceParserService().parseMedicalVoiceText(rawText);
+    
+    // Check if the service threw a graceful error to inform the user
+    if (parsedResult.containsKey("error") && context.mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Voice Processing Failed'),
+          content: Text(parsedResult["error"] ?? "An unknown error occurred."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    if (parsedResult.isNotEmpty && !parsedResult.containsKey("error")) {
+      final String extractedMedicine = parsedResult['medicine'] ?? '';
+      final String extractedDosage = parsedResult['dosage'] ?? '';
+      final String extractedDuration = parsedResult['duration'] ?? '';
+      final String extractedInstruction = parsedResult['instruction'] ?? '';
+
+      for (final page in pages) {
+        final boxIndex = page.dynamicBoxes.indexWhere((b) => b.id == boxId);
+        if (boxIndex != -1) {
+          final box = page.dynamicBoxes[boxIndex];
+          
+          if (extractedMedicine.isNotEmpty) {
+             final dbMedicines = await DatabaseHelper().getAllMedicines();
+             final dbNames = dbMedicines.map((e) => e.name).toList();
+             if (dbNames.isNotEmpty) {
+               final bestMatch = extractOne(
+                  query: extractedMedicine, 
+                  choices: dbNames,
+               );
+               if (bestMatch.score > 50) { 
+                  box.medicineController.text = bestMatch.choice;
+               } else {
+                  box.medicineController.text = extractedMedicine; 
+               }
+             } else {
+               box.medicineController.text = extractedMedicine; 
+             }
+          }
+
+          if (extractedDosage.isNotEmpty) box.dosageController.text = extractedDosage;
+          if (extractedDuration.isNotEmpty) box.durationController.text = extractedDuration;
+          if (extractedInstruction.isNotEmpty) {
+             box.foodInstruction = extractedInstruction;
+             box.foodInstructionController.text = extractedInstruction;
+          }
+          
+          break;
+        }
+      }
+    }
+
+    isProcessingVoiceMap[boxId] = false;
+    onUpdate?.call();
   }
 
   void dispose() {

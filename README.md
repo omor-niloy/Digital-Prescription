@@ -6,6 +6,7 @@ Flutter app to create, save, and print A4 medical prescriptions with a WYSIWYG l
 
 - A4 PDF with background image; on‑screen layout mirrors the PDF output (what you see is what you get)
 - Print directly or save PDFs; file name format: `<phone>_<patientName>_<yyyy-MM-dd>.pdf`
+- **Offline Voice Parsing:** Dictate medicines smoothly (e.g., *"Napa 1 0 1 for 5 days after meal"*) using a lightweight, fuzzy-logic parser that maps speech directly to the local SQLite database.
 - Medicine entry UX:
   - Row 1: Medicine + Duration (compact; label “Days”, hint “days”)
   - Row 2: Dosage + Food instruction
@@ -25,6 +26,7 @@ Flutter app to create, save, and print A4 medical prescriptions with a WYSIWYG l
 
 - `lib/main.dart` — App entry; desktop DB init; interaction/zoom behavior
 - `lib/services/pdf_service.dart` — A4 PDF generation, printing, saving, Bengali Food rasterization, path & permission handling
+- `lib/services/voice_parser_service.dart` — Lightweight Regex and fuzzy logic matching for offline voice dictations
 - `lib/controllers/prescription_controller.dart` — Page/state orchestration; clear/reset helpers
 - `lib/widgets/prescription_page.dart` — On‑screen A4 preview using background image
 - `lib/widgets/patient_info_panel.dart` — Patient/medicine form; duration/dosage/food controls; numbering starts at 1
@@ -55,9 +57,12 @@ Notes
 
 ## Usage
 
-1) Enter patient info and medicines
+1) Enter patient info and medicines (using keyboard or the **Voice Dictation** mic array)
 2) Tap Print to send to printer or Save to write a PDF
 3) PDFs are named `<phone>_<patientName>_<date>.pdf` in the chosen directory
+
+**Voice Dictation Format:** When using the microphone, phrase your dictation like:
+> `"Medicine Name 1 0 1 for 5 days after meal"`
 
 ## Credits
 
